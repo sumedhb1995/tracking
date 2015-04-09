@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -255,6 +255,10 @@ class ParticleFilter(InferenceModule):
         weight with each position) is incorrect and may produce errors.
         """
         "*** YOUR CODE HERE ***"
+        self.particles = []
+        num_legal = len(self.legalPositions)
+        for i in range(self.numParticles):
+            self.particles.append(self.legalPositions[i % num_legal])
 
     def observe(self, observation, gameState):
         """
@@ -287,7 +291,27 @@ class ParticleFilter(InferenceModule):
         emissionModel = busters.getObservationDistribution(noisyDistance)
         pacmanPosition = gameState.getPacmanPosition()
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        belief = self.getBeliefDistribution()
+        newBelief = util.Counter()
+
+        if noisyDistance == None:
+            self.particles = [self.getJailPosition() for particle in self.particles]
+            return
+
+        for particle in self.particles:
+            dist = util.manhattanDistance(particle, pacmanPosition)
+            newBelief[particle] += emissionModel[dist]
+
+        if newBelief.totalCount() == 0:
+            self.initializeUniformly(gameState)
+            newBelief = self.getBeliefDistribution()
+
+        newBelief = util.normalize(newBelief)
+
+        keys = [key for key in newBelief]
+        values = [newBelief[key] for key in keys]
+        self.particles = util.nSample(values, keys, self.numParticles)
+
 
     def elapseTime(self, gameState):
         """
@@ -304,7 +328,7 @@ class ParticleFilter(InferenceModule):
         a belief distribution.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        newPosDist = self.getPositionDistribution(self.setGhostPosition(gameState, oldPos))
 
     def getBeliefDistribution(self):
         """
@@ -314,7 +338,11 @@ class ParticleFilter(InferenceModule):
         Counter object)
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        counter = util.Counter()
+        for particle in self.particles:
+            counter[particle] += 1
+        counter = util.normalize(counter)
+        return counter
 
 class MarginalInference(InferenceModule):
     """
