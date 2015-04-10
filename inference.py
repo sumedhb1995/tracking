@@ -298,9 +298,9 @@ class ParticleFilter(InferenceModule):
             self.particles = [self.getJailPosition() for particle in self.particles]
             return
 
-        for particle in self.particles:
+        for particle in belief:
             dist = util.manhattanDistance(particle, pacmanPosition)
-            newBelief[particle] += emissionModel[dist]
+            newBelief[particle] = emissionModel[dist] * belief[particle]
 
         if newBelief.totalCount() == 0:
             self.initializeUniformly(gameState)
@@ -328,7 +328,11 @@ class ParticleFilter(InferenceModule):
         a belief distribution.
         """
         "*** YOUR CODE HERE ***"
-        newPosDist = self.getPositionDistribution(self.setGhostPosition(gameState, oldPos))
+        nextParticles = []
+        for p in self.particles:
+            newDist = self.getPositionDistribution(self.setGhostPosition(gameState, p))
+            nextParticles.append(util.sample(newDist))
+        self.particles = nextParticles
 
     def getBeliefDistribution(self):
         """
